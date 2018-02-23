@@ -64,6 +64,7 @@ class Makefile(object):
         self.makefile = self.makefile[:position_start] + var + code + self.makefile[position_end:]
 
     def update_toolchain(self, cc: str='gcc'):
+        self.makefile = self.makefile.replace('BINPATH = ', 'BINPATH = /opt/gcc-arm-none-eabi/bin/')
         self.makefile = self.makefile.replace('$(BINPATH)/', '$(BINPATH)')
         self.makefile = self.makefile.replace('OPT = -Og', 'OPT = -Os')
         if cc == 'gcc':
