@@ -3,6 +3,7 @@ import os
 import subprocess
 from pathlib import Path
 
+
 CMD_FLASH = \
 """
 #######################################
@@ -14,8 +15,10 @@ prog:
 
 TAG_GENERIC = '# Generic Makefile (based on gcc)'
 TAG_MODIFY_CPP = '# Modified for C++'
+TAG_SOURCES_PATH = '# source path'
 TAG_SOURCES_C = '# C sources'
 TAG_SOURCES_ASM = '# ASM sources'
+TAG_SOURCES_C_INC = '# C includes'
 TAG_EOF = '# *** EOF ***'
 
 class Makefile(object):
@@ -25,7 +28,7 @@ class Makefile(object):
             self.makefile = fr.read()
         self.modify()
 
-    def save(self):
+    def __del__(self):
         with open(self.MAKEFILE_LOCATION, 'w') as fw:
             fw.write(self.makefile)
 
@@ -43,17 +46,22 @@ class Makefile(object):
             position = self.get_position(TAG_GENERIC)
             self.makefile = self.makefile[:position] + TAG_MODIFY_CPP + '\n' + self.makefile[position:]
 
-    def repair_c(self):
-        position_start = self.get_position('C_SOURCES =  \\')
-        position_end = self.makefile.find(TAG_SOURCES_ASM) - 1
-        file_c = sorted(
+    def repair_multiple_definition(self, tag: str):
+        position_start = self.get_position(tag)
+        i = position_start
+        while self.makefile[i:i+2] != '\n\n' and self.makefile[i:i+2] != '\n#':
+            i += 1
+        position_end = i
+        code = self.makefile[position_start:position_end].split('\n')
+        var = code[0] + '\n'
+        code = sorted(
             list(set(map(
                 lambda x: x.replace('\\', '').strip(),
-                self.makefile[position_start:position_end].split('\n'),
+                code[1:],
             )))
         )
-        str_c = ''.join(list(map(lambda x: x + ' \\\n', file_c[:-1])) + [file_c[-1] + '\n'])
-        self.makefile = self.makefile[:position_start] + str_c + self.makefile[position_end:]
+        code = ''.join(list(map(lambda x: x + ' \\\n', code[:-1])) + [code[-1] + '\n'])
+        self.makefile = self.makefile[:position_start] + var + code + self.makefile[position_end:]
 
     def add_stm32_programmer(self):
         home = str(Path.home())
@@ -72,9 +80,11 @@ class Makefile(object):
     def modify(self):
         self.unix_end_line()
         self.check_was_modified()
-        self.repair_c()
+        self.repair_multiple_definition(TAG_SOURCES_PATH)
+        self.repair_multiple_definition(TAG_SOURCES_C)
+        self.repair_multiple_definition(TAG_SOURCES_C_INC)
         self.add_stm32_programmer()
-        self.save()
+
 
 if __name__ == '__main__':
     Makefile()
