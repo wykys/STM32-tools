@@ -3,19 +3,25 @@ import os
 import subprocess
 from pathlib import Path
 
+CMD_FLASH = \
+"""
+#######################################
+# flash
+#######################################
+prog:
+\t{} -c port=SWD reset=HWrst -w build/$(TARGET).bin 0x08000000 -v -rst
+"""
 
 class Makefile(object):
     def __init__(self, path: str='Makefile'):
         self.MAKEFILE_LOCATION = path
-        fr = open(self.MAKEFILE_LOCATION, 'r+')
-        self.makefile = fr.read()
-        fr.close()
+        with open(self.MAKEFILE_LOCATION + '_', 'r+') as fr:
+            self.makefile = fr.read()
         self.modify()
 
     def save(self):
-        fw = open(self.MAKEFILE_LOCATION + '_test', 'w')
-        fw.write(self.makefile)
-        fw.close()
+        with open(self.MAKEFILE_LOCATION, 'w') as fw:
+            fw.write(self.makefile)
 
     def unix_end_line(self):
         self.makefile.replace('\r\n', '\n')
@@ -36,23 +42,24 @@ class Makefile(object):
     def repair_c(self):
         position_start = self.get_position('C_SOURCES =  \\')
         position_end = self.makefile.find('# ASM sources') - 1
-        file_c = sorted(list(set(map(lambda x: x.replace('\\', '').strip(), self.makefile[position_start:position_end].split('\n')))))
+        file_c = sorted(
+            list(set(map(
+                lambda x: x.replace('\\', '').strip(),
+                self.makefile[position_start:position_end].split('\n'),
+            )))
+        )
         str_c = ''.join(list(map(lambda x: x + ' \\\n', file_c[:-1])) + [file_c[-1] + '\n'])
-
         self.makefile = self.makefile[:position_start] + str_c + self.makefile[position_end:]
 
     def add_stm32_programmer(self):
         home = str(Path.home())
-        result = subprocess.run(['find', home, '-name', 'STM32_Programmer_CLI'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        result = subprocess.run(
+            ['find', home, '-name', 'STM32_Programmer_CLI'],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
         path = result.stdout.decode('utf8')[:-1]
-
         if path:
-            prog_str = \
-"""
-# Flash
-prog:
-\t{} -c port=SWD reset=HWrst -w build/$(TARGET).bin 0x08000000 -v -rst
-""".format(path)
+            prog_str = CMD_FLASH.format(path)
             position = self.makefile.find('# *** EOF ***') - 1
             self.makefile = self.makefile[:position] + prog_str + self.makefile[position:]
         else:
@@ -64,7 +71,6 @@ prog:
         self.repair_c()
         self.add_stm32_programmer()
         self.save()
-
 
 if __name__ == '__main__':
     Makefile()
