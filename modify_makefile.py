@@ -38,19 +38,27 @@ class Makefile(object):
     def unix_end_line(self):
         self.makefile.replace('\r\n', '\n')
 
-    def get_position(self, expression: str) -> int:
+    def get_position_behind(self, expression: str) -> int:
         return self.makefile.find(expression) + len(expression) + 1
+
+    def set_variable(self, name: str, value: str):
+        position_start = self.get_position_behind(name + ' ')
+        i = position_start
+        while self.makefile[i] != '\n':
+            i += 1
+        position_end = i
+        self.makefile = self.makefile[:position_start] + ' ' + value + self.makefile[position_end:]
 
     def check_was_modified(self):
         if self.makefile.find(TAG_MODIFY_CPP) != -1:
             print('This Makefile was already mofified')
             exit()
         else:
-            position = self.get_position(TAG_GENERIC)
+            position = self.get_position_behind(TAG_GENERIC)
             self.makefile = self.makefile[:position] + TAG_MODIFY_CPP + '\n' + self.makefile[position:]
 
     def repair_multiple_definition(self, tag: str):
-        position_start = self.get_position(tag)
+        position_start = self.get_position_behind(tag)
         i = position_start
         while self.makefile[i:i+2] != '\n\n' and self.makefile[i:i+2] != '\n#':
             i += 1
@@ -66,14 +74,9 @@ class Makefile(object):
         code = ''.join(list(map(lambda x: x + ' \\\n', code[:-1])) + [code[-1] + '\n'])
         self.makefile = self.makefile[:position_start] + var + code + self.makefile[position_end:]
 
-    def update_toolchain(self, cc: str='gcc'):
-        self.replace('BINPATH = ', 'BINPATH = /opt/gcc-arm-none-eabi/bin/')
+    def update_toolchain(self):
         self.replace('$(BINPATH)/', '$(BINPATH)')
-        self.replace('OPT = -Og', 'OPT = -Os')
-        if cc == 'gcc':
-            self.replace('g++', 'gcc')
-        else:
-            self.replace('gcc', 'g++')
+        self.set_variable('BINPATH', '/opt/gcc-arm-none-eabi/bin/')
 
     def hide_command(self, cmd: str):
         self.replace('\t' + cmd, '\t@' + cmd)
@@ -102,8 +105,14 @@ class Makefile(object):
         self.repair_multiple_definition(TAG_SOURCES_C)
         self.repair_multiple_definition(TAG_SOURCES_C_INC)
         self.update_toolchain()
+        self.set_variable('OPT', '-Os')
         self.hide_command('$(CC)')
         self.hide_command('$(AS)')
+        self.hide_command('$(CP)')
+        self.hide_command('$(AR)')
+        self.hide_command('$(SZ)')
+        self.hide_command('$(HEX)')
+        self.hide_command('$(BIN)')
         self.add_stm32_programmer()
 
 
