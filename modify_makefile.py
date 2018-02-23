@@ -32,6 +32,9 @@ class Makefile(object):
         with open(self.MAKEFILE_LOCATION, 'w') as fw:
             fw.write(self.makefile)
 
+    def replace(self, old: str, new: str):
+        self.makefile = self.makefile.replace(old, new)
+
     def unix_end_line(self):
         self.makefile.replace('\r\n', '\n')
 
@@ -64,19 +67,19 @@ class Makefile(object):
         self.makefile = self.makefile[:position_start] + var + code + self.makefile[position_end:]
 
     def update_toolchain(self, cc: str='gcc'):
-        self.makefile = self.makefile.replace('BINPATH = ', 'BINPATH = /opt/gcc-arm-none-eabi/bin/')
-        self.makefile = self.makefile.replace('$(BINPATH)/', '$(BINPATH)')
-        self.makefile = self.makefile.replace('OPT = -Og', 'OPT = -Os')
+        self.replace('BINPATH = ', 'BINPATH = /opt/gcc-arm-none-eabi/bin/')
+        self.replace('$(BINPATH)/', '$(BINPATH)')
+        self.replace('OPT = -Og', 'OPT = -Os')
         if cc == 'gcc':
-            self.makefile = self.makefile.replace('g++', 'gcc')
+            self.replace('g++', 'gcc')
         else:
-            self.makefile = self.makefile.replace('gcc', 'g++')
+            self.replace('gcc', 'g++')
 
     def hide_command(self, cmd: str):
-        self.makefile = self.makefile.replace('\t' + cmd, '\t@' + cmd)
+        self.replace('\t' + cmd, '\t@' + cmd)
 
     def show_command(self, cmd: str):
-        self.makefile = self.makefile.replace('\t@' + cmd, '\t' + cmd)
+        self.replace('\t@' + cmd, '\t' + cmd)
 
     def add_stm32_programmer(self):
         home = str(Path.home())
