@@ -63,6 +63,20 @@ class Makefile(object):
         code = ''.join(list(map(lambda x: x + ' \\\n', code[:-1])) + [code[-1] + '\n'])
         self.makefile = self.makefile[:position_start] + var + code + self.makefile[position_end:]
 
+    def update_toolchain(self, cc: str='gcc'):
+        self.makefile = self.makefile.replace('$(BINPATH)/', '$(BINPATH)')
+        self.makefile = self.makefile.replace('OPT = -Og', 'OPT = -Os')
+        if cc == 'gcc':
+            self.makefile = self.makefile.replace('g++', 'gcc')
+        else:
+            self.makefile = self.makefile.replace('gcc', 'g++')
+
+    def hide_command(self, cmd: str):
+        self.makefile = self.makefile.replace('\t' + cmd, '\t@' + cmd)
+
+    def show_command(self, cmd: str):
+        self.makefile = self.makefile.replace('\t@' + cmd, '\t' + cmd)
+
     def add_stm32_programmer(self):
         home = str(Path.home())
         result = subprocess.run(
@@ -83,6 +97,9 @@ class Makefile(object):
         self.repair_multiple_definition(TAG_SOURCES_PATH)
         self.repair_multiple_definition(TAG_SOURCES_C)
         self.repair_multiple_definition(TAG_SOURCES_C_INC)
+        self.update_toolchain()
+        self.hide_command('$(CC)')
+        self.hide_command('$(AS)')
         self.add_stm32_programmer()
 
 
