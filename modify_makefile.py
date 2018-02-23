@@ -77,6 +77,12 @@ class Makefile(object):
     def unix_end_line(self):
         self.makefile.replace('\r\n', '\n')
 
+    def get_position_front(self, expression: str) -> int:
+        return self.makefile.find(expression) - 1
+
+    def get_position(self, expression: str) -> int:
+        return self.makefile.find(expression)
+
     def get_position_behind(self, expression: str) -> int:
         return self.makefile.find(expression) + len(expression) + 1
 
@@ -92,7 +98,7 @@ class Makefile(object):
         self.makefile = self.makefile[:position_start] + ' ' + value + self.makefile[position_end:]
 
     def check_was_modified(self):
-        if self.makefile.find(TAG_MODIFY_CPP) != -1:
+        if self.get_position(TAG_MODIFY_CPP) != -1:
             print('This Makefile was already mofified')
             exit()
         else:
@@ -124,9 +130,9 @@ class Makefile(object):
         self.set_variable('CC', '$(BINPATH)$(PREFIX)g++')
         self.set_variable('CFLAGS', self.flags(CFLAGS))
         self.set_variable('LDFLAGS', self.flags(LDFLAGS))
-        position = self.makefile.find(TAG_LIFT_OF_ASM_OBJECTS)
+        position = self.get_position(TAG_LIFT_OF_ASM_OBJECTS)
         self.makefile = self.makefile[:position] + TAG_LIST_OF_CPP_OBJECTS + CMD_OBJECTS_APPEND_CPP + self.makefile[position:]
-        position = self.makefile.find('$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)') - 1
+        position = self.get_position_front('$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)')
         self.makefile = self.makefile[:position] + CMD_BUILD_CPP + self.makefile[position:]
 
     def hide_command(self, cmd: str):
@@ -144,7 +150,7 @@ class Makefile(object):
         path = result.stdout.decode('utf8')[:-1]
         if path:
             prog_str = CMD_FLASH.format(path)
-            position = self.makefile.find(TAG_EOF) - 1
+            position = self.get_position_front(TAG_EOF)
             self.makefile = self.makefile[:position] + prog_str + self.makefile[position:]
         else:
             print('Install STM32 Programmer CLI for Flash firmware')
