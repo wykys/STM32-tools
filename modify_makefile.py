@@ -12,6 +12,12 @@ prog:
 \t{} -c port=SWD reset=HWrst -w build/$(TARGET).bin 0x08000000 -v -rst
 """
 
+TAG_GENERIC = '# Generic Makefile (based on gcc)'
+TAG_MODIFY_CPP = '# Modified for C++'
+TAG_SOURCES_C = '# C sources'
+TAG_SOURCES_ASM = '# ASM sources'
+TAG_EOF = '# *** EOF ***'
+
 class Makefile(object):
     def __init__(self, path: str='Makefile'):
         self.MAKEFILE_LOCATION = path
@@ -30,18 +36,16 @@ class Makefile(object):
         return self.makefile.find(expression) + len(expression) + 1
 
     def check_was_modified(self):
-        tag_modify = '# Modified for C++'
-
-        if self.makefile.find(tag_modify) != -1:
+        if self.makefile.find(TAG_MODIFY_CPP) != -1:
             print('This Makefile was already mofified')
             exit()
         else:
-            position = self.get_position('# Generic Makefile (based on gcc)')
-            self.makefile = self.makefile[:position] + tag_modify + '\n' + self.makefile[position:]
+            position = self.get_position(TAG_GENERIC)
+            self.makefile = self.makefile[:position] + TAG_MODIFY_CPP + '\n' + self.makefile[position:]
 
     def repair_c(self):
         position_start = self.get_position('C_SOURCES =  \\')
-        position_end = self.makefile.find('# ASM sources') - 1
+        position_end = self.makefile.find(TAG_SOURCES_ASM) - 1
         file_c = sorted(
             list(set(map(
                 lambda x: x.replace('\\', '').strip(),
@@ -60,7 +64,7 @@ class Makefile(object):
         path = result.stdout.decode('utf8')[:-1]
         if path:
             prog_str = CMD_FLASH.format(path)
-            position = self.makefile.find('# *** EOF ***') - 1
+            position = self.makefile.find(TAG_EOF) - 1
             self.makefile = self.makefile[:position] + prog_str + self.makefile[position:]
         else:
             print('Install STM32 Programmer CLI for Flash firmware')
