@@ -64,18 +64,21 @@ class Makefile(object):
     def __init__(self, path: str='Makefile'):
         self.MAKEFILE_LOCATION = path
         with open(self.MAKEFILE_LOCATION + '_', 'r+') as fr:
-            self.makefile = fr.read()
+            self.update(fr.read())
         self.modify()
 
     def __del__(self):
         with open(self.MAKEFILE_LOCATION, 'w') as fw:
             fw.write(self.makefile)
 
+    def update(self, *content: str):
+        self.makefile = ''.join(content)
+
     def replace(self, old: str, new: str):
-        self.makefile = self.makefile.replace(old, new)
+        self.update(self.makefile.replace(old, new))
 
     def unix_end_line(self):
-        self.makefile.replace('\r\n', '\n')
+        self.replace('\r\n', '\n')
 
     def get_position_front(self, expression: str) -> int:
         return self.makefile.find(expression) - 1
@@ -95,7 +98,7 @@ class Makefile(object):
         while self.makefile[i] != '\n':
             i += 1
         position_end = i
-        self.makefile = self.makefile[:position_start] + ' ' + value + self.makefile[position_end:]
+        self.update(self.makefile[:position_start], ' ', value, self.makefile[position_end:])
 
     def check_was_modified(self):
         if self.get_position(TAG_MODIFY_CPP) != -1:
@@ -103,7 +106,7 @@ class Makefile(object):
             exit()
         else:
             position = self.get_position_behind(TAG_GENERIC)
-            self.makefile = self.makefile[:position] + TAG_MODIFY_CPP + '\n' + self.makefile[position:]
+            self.update(self.makefile[:position], TAG_MODIFY_CPP, '\n', self.makefile[position:])
 
     def repair_multiple_definition(self, tag: str):
         position_start = self.get_position_behind(tag)
@@ -120,7 +123,7 @@ class Makefile(object):
             )))
         )
         code = ''.join(list(map(lambda x: x + ' \\\n', code[:-1])) + [code[-1] + '\n'])
-        self.makefile = self.makefile[:position_start] + var + code + self.makefile[position_end:]
+        self.update(self.makefile[:position_start], var, code, self.makefile[position_end:])
 
     def update_toolchain(self):
         self.replace('$(BINPATH)/', '$(BINPATH)')
@@ -131,9 +134,9 @@ class Makefile(object):
         self.set_variable('CFLAGS', self.flags(CFLAGS))
         self.set_variable('LDFLAGS', self.flags(LDFLAGS))
         position = self.get_position(TAG_LIFT_OF_ASM_OBJECTS)
-        self.makefile = self.makefile[:position] + TAG_LIST_OF_CPP_OBJECTS + CMD_OBJECTS_APPEND_CPP + self.makefile[position:]
+        self.update(self.makefile[:position], TAG_LIST_OF_CPP_OBJECTS, CMD_OBJECTS_APPEND_CPP, self.makefile[position:])
         position = self.get_position_front('$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)')
-        self.makefile = self.makefile[:position] + CMD_BUILD_CPP + self.makefile[position:]
+        self.update(self.makefile[:position], CMD_BUILD_CPP, self.makefile[position:])
 
     def hide_command(self, cmd: str):
         self.replace('\t' + cmd, '\t@' + cmd)
@@ -151,7 +154,7 @@ class Makefile(object):
         if path:
             prog_str = CMD_FLASH.format(path)
             position = self.get_position_front(TAG_EOF)
-            self.makefile = self.makefile[:position] + prog_str + self.makefile[position:]
+            self.update(self.makefile[:position], prog_str, self.makefile[position:])
         else:
             print('Install STM32 Programmer CLI for Flash firmware')
 
