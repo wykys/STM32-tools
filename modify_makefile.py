@@ -10,7 +10,7 @@ CMD_FLASH = \
 # flash
 #######################################
 prog:
-\t{} -c port=SWD reset=HWrst -w build/$(TARGET).bin 0x08000000 -v -rst
+\t@{} -c port=SWD reset=HWrst -w build/$(TARGET).bin 0x08000000 -v -rst
 """
 
 CMD_OBJECTS_APPEND_CPP = \
@@ -53,6 +53,7 @@ TAG_GENERIC = '# Generic Makefile (based on gcc)'
 TAG_MODIFY_CPP = '# Modified for C++'
 TAG_SOURCES_PATH = '# source path'
 TAG_SOURCES_C = '# C sources'
+TAG_SOURCES_CPP = '# C++ sources'
 TAG_SOURCES_ASM = '# ASM sources'
 TAG_SOURCES_C_INC = '# C includes'
 TAG_LIST_OF_OBJECTS = '# list of objects'
@@ -133,6 +134,8 @@ class Makefile(object):
         self.set_variable('CC', '$(BINPATH)$(PREFIX)g++')
         self.set_variable('CFLAGS', self.flags(CFLAGS))
         self.set_variable('LDFLAGS', self.flags(LDFLAGS))
+        position = self.get_position_front(TAG_SOURCES_ASM)
+        self.update(self.makefile[:position], TAG_SOURCES_CPP, '\nCPP_SOURCES = \\\n\n', self.makefile[position:])
         position = self.get_position(TAG_LIFT_OF_ASM_OBJECTS)
         self.update(self.makefile[:position], TAG_LIST_OF_CPP_OBJECTS, CMD_OBJECTS_APPEND_CPP, self.makefile[position:])
         position = self.get_position_front('$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)')
@@ -160,10 +163,11 @@ class Makefile(object):
 
     def modify(self):
         self.unix_end_line()
-        self.check_was_modified()
         self.repair_multiple_definition(TAG_SOURCES_PATH)
         self.repair_multiple_definition(TAG_SOURCES_C)
         self.repair_multiple_definition(TAG_SOURCES_C_INC)
+        self.repair_multiple_definition(TAG_SOURCES_CPP)
+        self.check_was_modified()
         self.update_toolchain()
         self.support_cpp()
         self.set_variable('OPT', '-Os')
