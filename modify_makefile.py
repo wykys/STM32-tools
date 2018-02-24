@@ -64,7 +64,7 @@ class Makefile(object):
     def __init__(self, path: str='Makefile'):
         self.MAKEFILE_LOCATION = path
         with open(self.MAKEFILE_LOCATION + '_', 'r+') as fr:
-            self.update(fr.read())
+            self.makefile = fr.read()
         self.modify()
 
     def __del__(self):
