@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import sys
+import argparse
 import subprocess
 from pathlib import Path
 
@@ -253,4 +254,13 @@ class Makefile(object):
 
 
 if __name__ == '__main__':
-    Makefile()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-f',
+        '--file',
+        dest='path',
+        action='store',
+        default='Makefile',
+        help='destination makefile',
+    )
+    Makefile(parser.parse_args().path)
