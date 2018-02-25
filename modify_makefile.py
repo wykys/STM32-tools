@@ -193,7 +193,7 @@ class Makefile(object):
         position_start = self.get_position('-DSTM32F')
         position_end = self.get_position_behind('-DSTM32F')
         define = self.makefile[position_start:position_end].replace('F', '_F')
-        self.block_append('C_DEFS', [define])
+        self.block_append(TAG_DEFINES_C, [define])
         self.block_append(TAG_INCLUDES_C, ['-IALOHAL'])
 
     def hide_command(self, cmd: str):
