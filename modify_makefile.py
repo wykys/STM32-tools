@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import sys
 import subprocess
 from pathlib import Path
 
@@ -55,16 +56,38 @@ TAG_SOURCES_PATH = '# source path'
 TAG_SOURCES_C = '# C sources'
 TAG_SOURCES_CPP = '# C++ sources'
 TAG_SOURCES_ASM = '# ASM sources'
-TAG_SOURCES_C_INC = '# C includes'
+TAG_INCLUDES_C = '# C includes'
+TAG_INCLUDES_ASM = '# AS includes'
+TAG_DEFINES_C = '# C defines'
+TAG_DEFINES_ASM = '# AS defines'
 TAG_LIST_OF_OBJECTS = '# list of objects'
 TAG_LIST_OF_CPP_OBJECTS = '# list of C++ objects'
 TAG_LIFT_OF_ASM_OBJECTS = '# list of ASM program objects'
 TAG_EOF = '# *** EOF ***'
 
+
+class NotExist(Exception):
+    def __init__(self, name: str):
+        self.error_text = '{} is not defined!'.format(name)
+
+    def __str__(self):
+        return self.error_text
+
+
+class MakefileIsModified(Exception):
+    def __str__(self):
+        return 'This Makefile was already mofified!'
+
+
+class ProgrammerNotFound(Exception):
+    def __str__(self):
+        return 'Install STM32 Programmer CLI for Flash firmware.'
+
+
 class Makefile(object):
     def __init__(self, path: str='Makefile'):
         self.MAKEFILE_LOCATION = path
-        with open(self.MAKEFILE_LOCATION + '_', 'r+') as fr:
+        with open(self.MAKEFILE_LOCATION, 'r+') as fr:
             self.makefile = fr.read()
         self.modify()
 
@@ -93,7 +116,12 @@ class Makefile(object):
     def flags(self, list_of_flags: tuple) -> str:
         return ''.join(map(lambda x: x + ' ', list_of_flags))[:-1]
 
+    def check_existence(self, name: str):
+        if self.get_position(name) == -1:
+            raise NotExist(name)
+
     def set_variable(self, name: str, value: str):
+        self.check_existence(name)
         position_start = self.get_position_behind(name + ' ')
         i = position_start
         while self.makefile[i] != '\n':
@@ -103,28 +131,48 @@ class Makefile(object):
 
     def check_was_modified(self):
         if self.get_position(TAG_MODIFY_CPP) != -1:
-            print('This Makefile was already mofified')
-            exit()
+            raise MakefileIsModified
         else:
             position = self.get_position_behind(TAG_GENERIC)
             self.update(self.makefile[:position], TAG_MODIFY_CPP, '\n', self.makefile[position:])
 
-    def repair_multiple_definition(self, tag: str):
+    def block_get_position(self, tag: str) -> tuple:
+        self.check_existence(tag)
         position_start = self.get_position_behind(tag)
         i = position_start
         while self.makefile[i:i+2] != '\n\n' and self.makefile[i:i+2] != '\n#':
             i += 1
         position_end = i
-        code = self.makefile[position_start:position_end].split('\n')
+        return (position_start, position_end)
+
+    def block_get(self, tag: str) -> list:
+        position_start, position_end = self.block_get_position(tag)
+        return self.makefile[position_start:position_end].split('\n')
+
+    def block_set(self, tag: str, content: list):
+        position_start, position_end = self.block_get_position(tag)
+        code = self.block_get(tag)
         var = code[0] + '\n'
-        code = sorted(
-            list(set(map(
-                lambda x: x.replace('\\', '').strip(),
-                code[1:],
-            )))
-        )
-        code = ''.join(list(map(lambda x: x + ' \\\n', code[:-1])) + [code[-1] + '\n'])
+        if content:
+            code = sorted(
+                list(set(map(
+                    lambda x: x.replace('\\', '').strip(),
+                    content,
+                )))
+            )
+            code = ''.join(list(map(lambda x: x + ' \\\n', code[:-1])) + [code[-1] + '\n'])
+        else:
+            code = ''
         self.update(self.makefile[:position_start], var, code, self.makefile[position_end:])
+
+    def block_append(self, tag: str, content: list):
+        code = self.block_get(tag)
+        var = code[0] + '\n'
+        code = code[1:] + content
+        self.block_set(tag, code)
+
+    def repair_multiple_definition(self, tag: str):
+        self.block_set(tag, self.block_get(tag)[1:])
 
     def update_toolchain(self):
         self.replace('$(BINPATH)/', '$(BINPATH)')
@@ -141,13 +189,20 @@ class Makefile(object):
         position = self.get_position_front('$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)')
         self.update(self.makefile[:position], CMD_BUILD_CPP, self.makefile[position:])
 
+    def alohal(self):
+        position_start = self.get_position('-DSTM32F')
+        position_end = self.get_position_behind('-DSTM32F')
+        define = self.makefile[position_start:position_end].replace('F', '_F')
+        self.block_append('C_DEFS', [define])
+        self.block_append(TAG_INCLUDES_C, ['-IALOHAL'])
+
     def hide_command(self, cmd: str):
         self.replace('\t' + cmd, '\t@' + cmd)
 
     def show_command(self, cmd: str):
         self.replace('\t@' + cmd, '\t' + cmd)
 
-    def add_stm32_programmer(self):
+    def stm32_programmer(self):
         home = str(Path.home())
         result = subprocess.run(
             ['find', home, '-name', 'STM32_Programmer_CLI'],
@@ -159,26 +214,42 @@ class Makefile(object):
             position = self.get_position_front(TAG_EOF)
             self.update(self.makefile[:position], prog_str, self.makefile[position:])
         else:
-            print('Install STM32 Programmer CLI for Flash firmware')
+            raise ProgrammerNotFound
 
     def modify(self):
-        self.unix_end_line()
-        self.repair_multiple_definition(TAG_SOURCES_PATH)
-        self.repair_multiple_definition(TAG_SOURCES_C)
-        self.repair_multiple_definition(TAG_SOURCES_C_INC)
-        self.repair_multiple_definition(TAG_SOURCES_CPP)
-        self.check_was_modified()
-        self.update_toolchain()
-        self.support_cpp()
-        self.set_variable('OPT', '-Os')
-        self.hide_command('$(CC)')
-        self.hide_command('$(AS)')
-        self.hide_command('$(CP)')
-        self.hide_command('$(AR)')
-        self.hide_command('$(SZ)')
-        self.hide_command('$(HEX)')
-        self.hide_command('$(BIN)')
-        self.add_stm32_programmer()
+        try:
+            self.unix_end_line()
+            self.check_was_modified()
+            self.update_toolchain()
+            self.support_cpp()
+            self.alohal()
+            self.set_variable('OPT', '-Os')
+            self.hide_command('$(CC)')
+            self.hide_command('$(AS)')
+            self.hide_command('$(CP)')
+            self.hide_command('$(AR)')
+            self.hide_command('$(SZ)')
+            self.hide_command('$(HEX)')
+            self.hide_command('$(BIN)')
+            self.stm32_programmer()
+
+        except NotExist as e:
+            print(str(e), file=sys.stderr)
+
+        except MakefileIsModified as e:
+            print(str(e), file=sys.stderr)
+
+        except ProgrammerNotFound as e:
+            print(str(e), file=sys.stderr)
+
+        finally:
+            self.repair_multiple_definition(TAG_SOURCES_PATH)
+            self.repair_multiple_definition(TAG_SOURCES_C)
+            self.repair_multiple_definition(TAG_SOURCES_CPP)
+            self.repair_multiple_definition(TAG_SOURCES_ASM)
+            self.repair_multiple_definition(TAG_INCLUDES_C)
+            self.repair_multiple_definition(TAG_DEFINES_C)
+            self.repair_multiple_definition(TAG_DEFINES_ASM)
 
 
 if __name__ == '__main__':
