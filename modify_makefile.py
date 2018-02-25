@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-import os
-import sys
 import argparse
+import os
 import subprocess
+import sys
 from pathlib import Path
 
-
 CMD_FLASH = \
-"""
+    """
 #######################################
 # flash
 #######################################
@@ -16,13 +15,13 @@ prog:
 """
 
 CMD_OBJECTS_APPEND_CPP = \
-"""
+    """
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(CPP_SOURCES:.cpp=.o)))
 vpath %.cpp $(sort $(dir $(CPP_SOURCES)))
 """
 
 CMD_BUILD_CPP = \
-"""
+    """
 $(BUILD_DIR)/%.o: %.cpp Makefile | $(BUILD_DIR)
 \t$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.cpp=.lst)) $< -o $@
 """
@@ -141,7 +140,7 @@ class Makefile(object):
         self.check_existence(tag)
         position_start = self.get_position_behind(tag)
         i = position_start
-        while self.makefile[i:i+2] != '\n\n' and self.makefile[i:i+2] != '\n#':
+        while self.makefile[i:i + 2] != '\n\n' and self.makefile[i:i + 2] != '\n#':
             i += 1
         position_end = i
         return (position_start, position_end)
