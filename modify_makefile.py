@@ -14,6 +14,11 @@ prog:
 \t@{} -c port=SWD reset=HWrst -w build/$(TARGET).bin 0x08000000 -v -rst
 """
 
+CMD_BUILD_AND_FLASH = \
+    """
+build_and_flash: all prog
+"""
+
 CMD_OBJECTS_APPEND_CPP = \
     """
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(CPP_SOURCES:.cpp=.o)))
@@ -216,6 +221,10 @@ class Makefile(object):
         else:
             raise ProgrammerNotFound
 
+    def build_and_flash(self):
+        position = self.get_position_front(TAG_EOF)
+        self.update(self.makefile[:position], CMD_BUILD_AND_FLASH, self.makefile[position:])
+
     def modify(self):
         try:
             self.unix_end_line()
@@ -232,6 +241,7 @@ class Makefile(object):
             self.hide_command('$(HEX)')
             self.hide_command('$(BIN)')
             self.stm32_programmer()
+            self.build_and_flash()
 
         except NotExist as e:
             print(str(e), file=sys.stderr)
