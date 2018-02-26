@@ -10,13 +10,14 @@ CMD_FLASH = \
 #######################################
 # flash
 #######################################
-prog:
+flash:
 \t@{} -c port=SWD reset=HWrst -w build/$(TARGET).bin 0x08000000 -v -rst
 """
 
 CMD_BUILD_AND_FLASH = \
     """
-build_and_flash: all prog
+build_and_flash: all
+\t@{} -c port=SWD reset=HWrst -w build/$(TARGET).bin 0x08000000 -v -rst
 """
 
 CMD_OBJECTS_APPEND_CPP = \
@@ -215,15 +216,12 @@ class Makefile(object):
         )
         path = result.stdout.decode('utf8')[:-1]
         if path:
-            prog_str = CMD_FLASH.format(path)
             position = self.get_position_front(TAG_EOF)
-            self.update(self.makefile[:position], prog_str, self.makefile[position:])
+            self.update(self.makefile[:position], CMD_FLASH.format(path), self.makefile[position:])
+            position = self.get_position_front(TAG_EOF)
+            self.update(self.makefile[:position], CMD_BUILD_AND_FLASH.format(path), self.makefile[position:])
         else:
             raise ProgrammerNotFound
-
-    def build_and_flash(self):
-        position = self.get_position_front(TAG_EOF)
-        self.update(self.makefile[:position], CMD_BUILD_AND_FLASH, self.makefile[position:])
 
     def modify(self):
         try:
@@ -241,7 +239,6 @@ class Makefile(object):
             self.hide_command('$(HEX)')
             self.hide_command('$(BIN)')
             self.stm32_programmer()
-            self.build_and_flash()
 
         except NotExist as e:
             print(str(e), file=sys.stderr)
