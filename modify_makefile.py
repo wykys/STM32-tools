@@ -189,7 +189,7 @@ class Makefile(object):
         self.set_variable('CFLAGS', self.flags(CFLAGS))
         self.set_variable('LDFLAGS', self.flags(LDFLAGS))
         position = self.get_position_front(TAG_SOURCES_ASM)
-        self.update(self.makefile[:position], TAG_SOURCES_CPP, '\nCPP_SOURCES = \\\n\n', self.makefile[position:])
+        self.update(self.makefile[:position], TAG_SOURCES_CPP, '\nCPP_SOURCES = $(wildcard Src/*.cpp)\n\n', self.makefile[position:])
         position = self.get_position(TAG_LIFT_OF_ASM_OBJECTS)
         self.update(self.makefile[:position], TAG_LIST_OF_CPP_OBJECTS, CMD_OBJECTS_APPEND_CPP, self.makefile[position:])
         position = self.get_position_front('$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)')
@@ -255,7 +255,6 @@ class Makefile(object):
         finally:
             self.repair_multiple_definition(TAG_SOURCES_PATH)
             self.repair_multiple_definition(TAG_SOURCES_C)
-            self.repair_multiple_definition(TAG_SOURCES_CPP)
             self.repair_multiple_definition(TAG_SOURCES_ASM)
             self.repair_multiple_definition(TAG_INCLUDES_C)
             self.repair_multiple_definition(TAG_DEFINES_C)
