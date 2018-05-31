@@ -195,11 +195,13 @@ class Makefile(object):
         position = self.get_position_front('$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)')
         self.update(self.makefile[:position], CMD_BUILD_CPP, self.makefile[position:])
 
-    def alohal(self):
+    def chip_family(self):
         position_start = self.get_position('-DSTM32F')
         position_end = self.get_position_behind('-DSTM32F')
         define = self.makefile[position_start:position_end].replace('F', '_F')
         self.block_append(TAG_DEFINES_C, [define])
+
+    def alohal(self):
         self.block_append(TAG_INCLUDES_C, ['-IALOHAL'])
 
     def hide_command(self, cmd: str):
@@ -229,7 +231,8 @@ class Makefile(object):
             self.check_was_modified()
             self.update_toolchain()
             self.support_cpp()
-            self.alohal()
+            self.chip_family()
+            #self.alohal()
             self.set_variable('OPT', '-Os')
             self.hide_command('$(CC)')
             self.hide_command('$(AS)')
