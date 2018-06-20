@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import argparse
 import os
-import subprocess
 import sys
-from pathlib import Path
+
+CUBE_PROGEMMER = '/usr/local/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/STM32CubeProgrammer'
 
 CMD_FLASH = \
     """
@@ -58,7 +58,7 @@ LDFLAGS = (
 
 TAG_GENERIC = '# Generic Makefile (based on gcc)'
 TAG_MODIFY_CPP = '# Modified for C++'
-TAG_SOURCES_PATH = '# source path'
+#TAG_SOURCES_PATH = '# source path'
 TAG_SOURCES_C = '# C sources'
 TAG_SOURCES_CPP = '# C++ sources'
 TAG_SOURCES_ASM = '# ASM sources'
@@ -181,11 +181,10 @@ class Makefile(object):
         self.block_set(tag, self.block_get(tag)[1:])
 
     def update_toolchain(self):
-        self.replace('$(BINPATH)/', '$(BINPATH)')
-        self.set_variable('BINPATH', '/opt/gcc-arm-none-eabi/bin/')
+        self.replace('PREFIX = arm-none-eabi-', 'PREFIX = arm-none-eabi-\nGCC_PATH = /opt/gcc-arm-none-eabi/bin\n')
 
     def support_cpp(self):
-        self.set_variable('CC', '$(BINPATH)$(PREFIX)g++')
+        self.set_variable('CC', '$(GCC_PATH)/$(PREFIX)g++')
         self.set_variable('CFLAGS', self.flags(CFLAGS))
         self.set_variable('LDFLAGS', self.flags(LDFLAGS))
         position = self.get_position_front(TAG_SOURCES_ASM)
@@ -211,17 +210,11 @@ class Makefile(object):
         self.replace('\t@' + cmd, '\t' + cmd)
 
     def stm32_programmer(self):
-        home = str(Path.home())
-        result = subprocess.run(
-            ['find', home, '-name', 'STM32_Programmer_CLI'],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        )
-        path = result.stdout.decode('utf8')[:-1]
-        if path:
+        if os.path.isfile(CUBE_PROGEMMER):
             position = self.get_position_front(TAG_EOF)
-            self.update(self.makefile[:position], CMD_FLASH.format(path), self.makefile[position:])
+            self.update(self.makefile[:position], CMD_FLASH.format(CUBE_PROGEMMER), self.makefile[position:])
             position = self.get_position_front(TAG_EOF)
-            self.update(self.makefile[:position], CMD_BUILD_AND_FLASH.format(path), self.makefile[position:])
+            self.update(self.makefile[:position], CMD_BUILD_AND_FLASH.format(CUBE_PROGEMMER), self.makefile[position:])
         else:
             raise ProgrammerNotFound
 
@@ -253,7 +246,7 @@ class Makefile(object):
             print(str(e), file=sys.stderr)
 
         finally:
-            self.repair_multiple_definition(TAG_SOURCES_PATH)
+            #self.repair_multiple_definition(TAG_SOURCES_PATH)
             self.repair_multiple_definition(TAG_SOURCES_C)
             self.repair_multiple_definition(TAG_SOURCES_ASM)
             self.repair_multiple_definition(TAG_INCLUDES_C)
