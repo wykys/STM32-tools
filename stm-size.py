@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
+# wykys 2018
+# The script parses the memory information from the linker script and
+# the size program, and then displays them in a more readable form.
+
 import argparse
 import sys
 import subprocess
 from pathlib import Path
+from colors import colors
 
 
 class Byte:
@@ -52,6 +57,9 @@ class Byte:
 
     def __add__(self, other):
         return Byte(self.bytes + other.bytes)
+
+    def __sub__(self, other):
+        return Byte(self.bytes - other.bytes)
 
     def __str__(self):
         if self.bytes >= 2**20:
@@ -157,6 +165,46 @@ def calculate_percentages(use_memory, all_memory):
     return use_memory.get_bytes() / (all_memory.get_bytes() / 100)
 
 
+def create_table(name, use_memory, all_memory, color=True):
+    columns = 30
+    width = columns - 2
+    percent = calculate_percentages(use_memory, all_memory)
+    bar = int(width*percent/100)
+
+    head_str = '{} MEMORY {:.1f} %'.format(name, percent)
+    all_str = 'All:'
+    use_str = 'Use:'
+    free_str = 'Free:'
+
+    head_width_tag = '{:^' + str(width) + '}'
+    all_width_tag = all_str + '{:>' + str(width - len(all_str)) + '}'
+    use_width_tag = use_str + '{:>' + str(width - len(use_str)) + '}'
+    free_width_tag = free_str + '{:>' + str(width - len(free_str)) + '}'
+
+    if color:
+        if percent < 60:
+            color = colors.bg.green + colors.fg.darkgrey + colors.bold
+        elif percent < 80:
+            color = colors.bg.orange + colors.fg.black + colors.bold
+        else:
+            color = colors.bg.red + colors.fg.black + colors.bold
+    else:
+        color = colors.bold
+
+    head = head_width_tag.format(head_str)
+    head = '{}{}{}{}{}'.format(color, head[:bar], colors.reset + colors.bold, head[bar:], colors.reset)
+
+    table = []
+    table.append('╔{}╗'.format('═'*width))
+    table.append('║{}║'.format(head))
+    table.append('╟{}╢'.format('─'*width))
+    table.append('║{}║'.format(all_width_tag.format(str(all_memory))))
+    table.append('║{}║'.format(use_width_tag.format(str(use_memory))))
+    table.append('║{}║'.format(free_width_tag.format(str(all_memory - use_memory))))
+    table.append('╚{}╝'.format('═'*width))
+    return table
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -175,6 +223,22 @@ if __name__ == '__main__':
         default='.',
         help='destination elf file',
     )
+    parser.add_argument(
+        '-c',
+        '--color',
+        dest='color',
+        action='store_true',
+        default=False,
+        help='activated color output'
+    )
+    parser.add_argument(
+        '-v',
+        '--vertical',
+        dest='table_rate',
+        action='store_true',
+        default=False,
+        help='prints the tables underneath'
+    )
 
     try:
         path_linker = check_linker_script_path(parser.parse_args().path_linker)
@@ -183,14 +247,19 @@ if __name__ == '__main__':
         print(str(e), file=sys.stderr)
         exit(-1)
 
-    print(path_linker)
-    print(path_elf)
-
     memory = linker_script_parser(path_linker)
     size = size_parser(path_elf)
 
     use_ram = size['data'] + size['bss']
     use_flash = size['text'] + size['data']
 
-    print('USE RAM: {} of {} ({:.0f} %)'.format(use_ram, memory['RAM'], calculate_percentages(use_ram, memory['RAM'])))
-    print('USE FLASH: {} of {} ({:.0f} %)'.format(use_flash, memory['FLASH'], calculate_percentages(use_flash, memory['FLASH'])))
+    color = parser.parse_args().color
+    ram = create_table('RAM', use_ram, memory['RAM'], color)
+    flash = create_table('FLASH', use_flash, memory['FLASH'], color)
+
+    if parser.parse_args().table_rate:
+        for line in ram + flash:
+            print(line)
+    else:
+        for i in range(len(ram)):
+            print('{} {}'.format(ram[i], flash[i]))
