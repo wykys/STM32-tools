@@ -7,14 +7,14 @@ The script parses the memory information from the linker script and the size pro
 The script can automatically find a binary `.elf` and linker script `.ld` file, if the two folders do not exceed the level of the two.
 
 ### Demo
-`stm-size`
-╔════════════════════════════╗ ╔════════════════════════════╗
-║      RAM MEMORY 3.1 %      ║ ║    FLASH MEMORY 12.0 %     ║
-╟────────────────────────────╢ ╟────────────────────────────╢
-║All:               128.0 KiB║ ║All:                 1.0 MiB║
-║Use:                 4.0 KiB║ ║Use:               122.5 KiB║
-║Free:              124.0 KiB║ ║Free:              901.5 KiB║
-╚════════════════════════════╝ ╚════════════════════════════╝
+`stm-size`<br/>
+╔════════════════════════════╗ ╔════════════════════════════╗<br/>
+║      RAM MEMORY 3.1 %      ║ ║    FLASH MEMORY 12.0 %     ║<br/>
+╟────────────────────────────╢ ╟────────────────────────────╢<br/>
+║All:               128.0 KiB║ ║All:                 1.0 MiB║<br/>
+║Use:                 4.0 KiB║ ║Use:               122.5 KiB║<br/>
+║Free:              124.0 KiB║ ║Free:              901.5 KiB║<br/>
+╚════════════════════════════╝ ╚════════════════════════════╝<br/>
 
 
 ### Agruments
