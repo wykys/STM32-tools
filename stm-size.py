@@ -206,7 +206,12 @@ def create_table(name, use_memory, all_memory, color=True):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        prog='stm-size',
+        description='The script parses the memory information from the linker'
+        'script and the size program, and then displays them in a more'
+        'readable form.'
+    )
     parser.add_argument(
         '-l',
         '--linker-script',
