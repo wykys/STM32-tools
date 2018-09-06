@@ -11,30 +11,31 @@ from colors import colors
 
 
 class Byte:
+    _unit_dict = {
+        'B': 1,
+        'K': 2**10,
+        'M': 2**20,
+        'KB': 2**10,
+        'KiB': 2**10,
+        'MiB': 2**20,
+        'GiB': 2**30,
+        'TiB': 2**40,
+        'PiB': 2**50,
+        'EiB': 2**60,
+        'ZiB': 2**70,
+        'YiB': 2**80,
+        'kB': 10**3,
+        'MB': 10**6,
+        'GB': 10**9,
+        'TB': 10**12,
+        'PB': 10**15,
+        'EB': 10**18,
+        'ZB': 10**21,
+        'YB': 10**24,
+    }
+
     def __init__(self, number):
-        self._unit_dict = {
-            'B': 1,
-            'K': 2**10,
-            'M': 2**20,
-            'KB': 2**10,
-            'KiB': 2**10,
-            'MiB': 2**20,
-            'GiB': 2**30,
-            'TiB': 2**40,
-            'PiB': 2**50,
-            'EiB': 2**60,
-            'ZiB': 2**70,
-            'YiB': 2**80,
-            'kB': 10**3,
-            'MB': 10**6,
-            'GB': 10**9,
-            'TB': 10**12,
-            'PB': 10**15,
-            'EB': 10**18,
-            'ZB': 10**21,
-            'YB': 10**24,
-        }
-        if type(number) is str:
+        if isinstance(number, str):
             if number.isdigit():
                 self.bytes = int(number)
             else:
@@ -192,7 +193,7 @@ def create_table(name, use_memory, all_memory, color=True):
         color = colors.bold
 
     head = head_width_tag.format(head_str)
-    head = '{}{}{}{}{}'.format(color, head[:bar], colors.reset + colors.bold, head[bar:], colors.reset)
+    head = ''.join((color, head[:bar], colors.reset + colors.bold, head[bar:], colors.reset))
 
     table = []
     table.append('╔{}╗'.format('═'*width))
@@ -266,5 +267,5 @@ if __name__ == '__main__':
         for line in ram + flash:
             print(line)
     else:
-        for i in range(len(ram)):
-            print('{} {}'.format(ram[i], flash[i]))
+        for line in zip(ram, flash):
+            print('{} {}'.format(line[0], line[1]))
