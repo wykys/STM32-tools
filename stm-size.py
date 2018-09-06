@@ -9,9 +9,10 @@ import subprocess
 from pathlib import Path
 from colors import colors
 from byte import Byte
+from operator import methodcaller
 
 
-class NotExist(Exception):
+class NotExistError(IOError):
     def __init__(self, name: str):
         self.error_text = '{} is not exists!'.format(name)
 
@@ -32,11 +33,11 @@ def is_elf(path):
     return is_exact_file(path, '.elf')
 
 
-def check_path(path, is_ok, max_recursive=float('inf'), recursive_index=0):
+def check_path(path, is_ok, max_recursive=None, recursive_index=0):
     path = Path(path)
     if path.is_dir():
         for sub_path in path.iterdir():
-            if sub_path.is_dir() and recursive_index < max_recursive:
+            if sub_path.is_dir() and (recursive_index < max_recursive or recursive_index is None):
                 sub_path = check_path(sub_path, is_ok, max_recursive, recursive_index + 1)
             if is_ok(sub_path):
                 path = sub_path
@@ -45,7 +46,7 @@ def check_path(path, is_ok, max_recursive=float('inf'), recursive_index=0):
     if (path.exists() and is_ok(path)) or recursive_index:
         return path
     else:
-        raise NotExist(path)
+        raise NotExistError(path)
 
 
 def check_elf_path(path):
@@ -87,14 +88,14 @@ def size_parser(path):
     head, data = result.strip().split('\n')
 
     def parse_size_table(data):
-        return list(map(lambda s: s.strip(), data.split()))[:-2]
+        return list(map(methodcaller('strip'), data.split()))[:-2]
 
     head = parse_size_table(head)
     data = parse_size_table(data)
 
     size = dict()
-    for i in range(len(head)):
-        size[head[i]] = Byte(data[i])
+    for i, name in enumerate(head):
+        size[name] = Byte(data[i])
 
     return size
 
@@ -186,7 +187,7 @@ if __name__ == '__main__':
     try:
         path_linker = check_linker_script_path(parser.parse_args().path_linker)
         path_elf = check_elf_path(parser.parse_args().path_elf)
-    except NotExist as e:
+    except NotExistError as e:
         print(str(e), file=sys.stderr)
         exit(-1)
 
@@ -204,5 +205,5 @@ if __name__ == '__main__':
         for line in ram + flash:
             print(line)
     else:
-        for line in zip(ram, flash):
-            print('{} {}'.format(line[0], line[1]))
+        for line_ram, line_flash in zip(ram, flash):
+            print('{} {}'.format(line_ram, line_flash))
