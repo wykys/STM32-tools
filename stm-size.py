@@ -7,7 +7,7 @@ import argparse
 import sys
 import subprocess
 from pathlib import Path
-from colors import colors
+from colors import Colors
 from byte import Byte
 from operator import methodcaller
 
@@ -122,16 +122,16 @@ def create_table(name, use_memory, all_memory, color=True):
 
     if color:
         if percent < 60:
-            color = colors.bg.green + colors.fg.darkgrey + colors.bold
+            color = Colors.bg.green + Colors.fg.darkgrey + Colors.bold
         elif percent < 80:
-            color = colors.bg.orange + colors.fg.black + colors.bold
+            color = Colors.bg.orange + Colors.fg.black + Colors.bold
         else:
-            color = colors.bg.red + colors.fg.black + colors.bold
+            color = Colors.bg.red + Colors.fg.black + Colors.bold
     else:
-        color = colors.bold
+        color = Colors.bold
 
     head = head_width_tag.format(head_str)
-    head = ''.join((color, head[:bar], colors.reset + colors.bold, head[bar:], colors.reset))
+    head = ''.join((color, head[:bar], Colors.reset + Colors.bold, head[bar:], Colors.reset))
 
     table = []
     table.append('╔{}╗'.format('═'*width))

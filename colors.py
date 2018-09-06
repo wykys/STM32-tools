@@ -1,4 +1,4 @@
-class colors:
+class Colors:
     reset = '\033[0m'
     bold = '\033[01m'
     disable = '\033[02m'
