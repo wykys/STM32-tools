@@ -8,70 +8,7 @@ import sys
 import subprocess
 from pathlib import Path
 from colors import colors
-
-
-class Byte:
-    _unit_dict = {
-        'B': 1,
-        'K': 2**10,
-        'M': 2**20,
-        'KB': 2**10,
-        'KiB': 2**10,
-        'MiB': 2**20,
-        'GiB': 2**30,
-        'TiB': 2**40,
-        'PiB': 2**50,
-        'EiB': 2**60,
-        'ZiB': 2**70,
-        'YiB': 2**80,
-        'kB': 10**3,
-        'MB': 10**6,
-        'GB': 10**9,
-        'TB': 10**12,
-        'PB': 10**15,
-        'EB': 10**18,
-        'ZB': 10**21,
-        'YB': 10**24,
-    }
-
-    def __init__(self, number):
-        if isinstance(number, str):
-            if number.isdigit():
-                self.bytes = int(number)
-            else:
-                for i in range(len(number)):
-                    if number[i].isalpha():
-                        unit = number[i:].strip()
-                        number = float(number[:i])
-                        break
-
-                self.bytes = int(number * self._unit_dict[unit])
-
-        else:
-            self.bytes = int(number)
-
-    def get_bytes(self):
-        return self.bytes
-
-    def set_bytes(self, number):
-        self.__init__(number)
-
-    def __add__(self, other):
-        return Byte(self.bytes + other.bytes)
-
-    def __sub__(self, other):
-        return Byte(self.bytes - other.bytes)
-
-    def __str__(self):
-        if self.bytes >= 2**20:
-            return '{:.1f} MiB'.format(self.bytes / 2**20)
-        elif self.bytes >= 2**10:
-            return '{:.1f} KiB'.format(self.bytes / 2**10)
-        else:
-            return '{:.1f} B'.format(self.bytes)
-
-    def __repr__(self):
-        return self.__str__()
+from byte import Byte
 
 
 class NotExist(Exception):
@@ -163,7 +100,7 @@ def size_parser(path):
 
 
 def calculate_percentages(use_memory, all_memory):
-    return use_memory.get_bytes() / (all_memory.get_bytes() / 100)
+    return use_memory.value / (all_memory.value / 100)
 
 
 def create_table(name, use_memory, all_memory, color=True):
