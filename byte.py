@@ -50,7 +50,7 @@ unit_dict_ten_on_n = OrderedDict(sorted({
 default_unit_format = 'KiB'
 
 
-class WrongUnitError(IOError):
+class WrongUnitError(KeyError):
     def __init__(self, name: str):
         self.error_text = '{} is wrong unit!'.format(name)
 
