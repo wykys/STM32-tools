@@ -47,7 +47,7 @@ unit_dict_ten_on_n = OrderedDict(sorted({
 }.items(), key=lambda x: x[1], reverse=True))
 
 
-default_unit_format = 'kB'
+default_unit_format = 'KiB'
 
 
 class WrongUnitError(IOError):
