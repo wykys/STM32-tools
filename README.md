@@ -10,7 +10,7 @@ The script can automatically find a binary `.elf` and linker script `.ld` file, 
 `stm-size`
 ```
 ╔════════════════════════════╗ ╔════════════════════════════╗
-║     RAM MEMORY 42.1 %      ║ ║    FLASH MEMORY 51.2 %     ║
+║      RAM MEMORY 42 %       ║ ║     FLASH MEMORY 51 %      ║
 ╟────────────────────────────╢ ╟────────────────────────────╢
 ║All:                   6 KiB║ ║All:                  32 KiB║
 ║Use:                 2.5 KiB║ ║Use:                  16 KiB║
