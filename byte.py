@@ -114,9 +114,15 @@ class Byte:
         return Byte(self.value - other.value)
 
     def __str__(self):
+        find_unit = False
         for unit, value in self.unit_dict.items():
             if abs(self.value) >= value:
-                return '{:.1f} {}'.format(self.value / value, unit)
+                find_unit = True
+                break
+        if not find_unit:
+            value = 1
+            unit = 'B'
+        return '{:.1f} {}'.format(self.value / value, unit)
 
     def __repr__(self):
         return self.__str__()
