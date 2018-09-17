@@ -108,7 +108,7 @@ def create_table(name, use_memory, all_memory, color=True):
     columns = 30
     width = columns - 2
     percent = calculate_percentages(use_memory, all_memory)
-    bar = int(width*percent/100)
+    bar = width if percent >= 100 else int(width*percent/100)
 
     head_str = '{} MEMORY {:.1f} %'.format(name, percent)
     all_str = 'All:'

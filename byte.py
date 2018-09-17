@@ -115,7 +115,7 @@ class Byte:
 
     def __str__(self):
         for unit, value in self.unit_dict.items():
-            if self.value >= value:
+            if abs(self.value) >= value:
                 return '{:.1f} {}'.format(self.value / value, unit)
 
     def __repr__(self):
