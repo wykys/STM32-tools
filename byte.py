@@ -122,7 +122,7 @@ class Byte:
         if not find_unit:
             value = 1
             unit = 'B'
-        return '{:.1f} {}'.format(self.value / value, unit)
+        return '{:.2g} {}'.format(self.value / value, unit)
 
     def __repr__(self):
         return self.__str__()
