@@ -35,3 +35,41 @@ optional arguments:
   -c, --color           activated color output
   -v, --vertical        prints the tables underneath
 ```
+
+## [Cortex Debug](https://github.com/Marus/cortex-debug)
+To run debugging, you need to install the following tools:
+* [ARM toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
+* [OpenOCD](https://github.com/ntfreak/openocd)
+* [CMSIS-SVD](https://github.com/posborne/cmsis-svd)
+
+### Visual Studio Code configuratin:
+
+`launch.json`
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceRoot}",
+            "executable": "./build/discovery.elf",
+            "name": "Debug (OpenOCD)",
+            "device": "STM32F407",
+            "svdFile" : "/home/wykys/projects/cmsis-svd/data/STMicro/STM32F407.svd",
+            "configFiles": [
+                "board/stm32f4discovery.cfg"
+            ]
+        }
+    ]
+}
+```
+
+`settings.json`
+```json
+{
+    "cortex-debug.armToolchainPath": "/opt/gcc-arm-none-eabi/bin",
+    "cortex-debug.openocdPath": "/usr/local/bin/openocd"
+}
+```
