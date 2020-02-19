@@ -73,3 +73,12 @@ To run debugging, you need to install the following tools:
     "cortex-debug.openocdPath": "/usr/local/bin/openocd"
 }
 ```
+
+## STM32CubeProgrammer Linux support
+``` bash
+sudo apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 openjfx-source=8u161-b12-1ubuntu2
+sudo apt-mark hold libopenjfx-java libopenjfx-jni openjfx openjfx-source
+# select JDK8
+sudo update-alternatives --config java
+# run STM32CubeProgrammer
+```
