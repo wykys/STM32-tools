@@ -42,6 +42,11 @@ To run debugging, you need to install the following tools:
 * [OpenOCD](https://github.com/ntfreak/openocd)
 * [CMSIS-SVD](https://github.com/posborne/cmsis-svd)
 
+For LinuxMint 20, it is necessary to install the library for debugging via openocd to work correctly.
+```sh
+sudo apt install libncurses5
+```
+
 ### Visual Studio Code configuratin:
 
 `launch.json`
@@ -53,13 +58,15 @@ To run debugging, you need to install the following tools:
             "type": "cortex-debug",
             "request": "launch",
             "servertype": "openocd",
-            "cwd": "${workspaceRoot}",
-            "executable": "./build/discovery.elf",
+            "cwd": "${workspaceRoot}/build",
+            "executable": "charger-display-fw.elf",
             "name": "Debug (OpenOCD)",
-            "device": "STM32F407",
-            "svdFile" : "/home/wykys/projects/cmsis-svd/data/STMicro/STM32F407.svd",
+            "device": "STM32F410",
+            "svdFile": "/home/wykys/projects/cmsis-svd/data/STMicro/STM32F410.svd",
+            "showDevDebugOutput": false,
             "configFiles": [
-                "board/stm32f4discovery.cfg"
+                "interface/stlink.cfg",
+                "target/stm32f4x.cfg"
             ]
         }
     ]
