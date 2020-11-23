@@ -83,7 +83,7 @@ def print_memory(memory):
 
 
 def size_parser(path):
-    result = subprocess.run(['arm-none-eabi-size', path], stdout=subprocess.PIPE)
+    result = subprocess.run(['/opt/gcc-arm-none-eabi/bin/arm-none-eabi-size', path], stdout=subprocess.PIPE)
     result = result.stdout.decode('utf-8')
     head, data = result.strip().split('\n')
 
