@@ -83,8 +83,12 @@ sudo apt install libncurses5
 
 ## STM32CubeProgrammer Linux support
 ``` bash
-sudo apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 openjfx-source=8u161-b12-1ubuntu2
-sudo apt-mark hold libopenjfx-java libopenjfx-jni openjfx openjfx-source
+# add new repo
+wget -q -O - "https://download.bell-sw.com/pki/GPG-KEY-bellsoft" | sudo apt-key add -
+echo "deb [arch=amd64] https://apt.bell-sw.com/ stable main" | sudo tee /etc/apt/sources.list.d/bellsoft.list
+# install
+sudo apt update
+sudo apt install bellsoft-java8-full
 # select JDK8
 sudo update-alternatives --config java
 # run STM32CubeProgrammer
