@@ -67,7 +67,20 @@ sudo apt install libncurses5
             "configFiles": [
                 "interface/stlink.cfg",
                 "target/stm32f4x.cfg"
-            ]
+            ],
+            "swoConfig": {
+                "enabled": true,
+                "cpuFrequency": 100000000,
+                "swoFrequency": 1800000,
+                "source": "probe",
+                "decoders": [
+                    {
+                        "type": "console",
+                        "label": "ITM",
+                        "port": 0
+                    }
+                ]
+            }
         }
     ]
 }
