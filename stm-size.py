@@ -3,18 +3,30 @@
 # The script parses the memory information from the linker script and
 # the size program, and then displays them in a more readable form.
 
-import argparse
 import sys
+import bitmath
+import argparse
 import subprocess
 from pathlib import Path
-from colors import Colors
-from byte import Byte
 from operator import methodcaller
+
+from rich import print
+from rich.table import Table
+
+
+def parse_size(num: str) -> bitmath.ALL_UNIT_TYPES:
+    num = num.strip()
+    last = num[-1]
+    if last != 'B':
+        if last.isalpha():
+            num += 'i'
+        num += 'B'
+    return bitmath.parse_string(num).best_prefix()
 
 
 class NotExistError(IOError):
     def __init__(self, name: str):
-        self.error_text = '{} is not exists!'.format(name)
+        self.error_text = f'{name} is not exists!'
 
     def __str__(self):
         return self.error_text
@@ -38,7 +50,8 @@ def check_path(path, is_ok, max_recursive=None, recursive_index=0):
     if path.is_dir():
         for sub_path in path.iterdir():
             if sub_path.is_dir() and (recursive_index < max_recursive or recursive_index is None):
-                sub_path = check_path(sub_path, is_ok, max_recursive, recursive_index + 1)
+                sub_path = check_path(
+                    sub_path, is_ok, max_recursive, recursive_index + 1)
             if is_ok(sub_path):
                 path = sub_path
                 break
@@ -72,18 +85,33 @@ def linker_script_parser(path):
                 break
             elif 'LENGTH' in line:
                 name = line.strip().split(':')[0].strip().split()[0].strip()
-                length = Byte(line.strip().split(':')[1].strip().split(',')[1].split('=')[1])
-                memory[name] = length
+                data = line.strip().split(':')[1].strip().split(',')[
+                    1].split('=')[1]
+                memory[name] = parse_size(data)
     return memory
 
 
-def print_memory(memory):
-    for name, length in memory.items():
-        print('{}\t{}'.format(name, length))
+class SizeParser:
+    def __init__(self) -> None:
+        pass
+
+    def parse_size_table(self, data):
+        return list(
+            map(
+                methodcaller('strip'), data.split()
+            )
+        )[:-2]
 
 
 def size_parser(path):
-    result = subprocess.run(['/opt/gcc-arm-none-eabi/bin/arm-none-eabi-size', path], stdout=subprocess.PIPE)
+    result = subprocess.run(
+        [
+            '/opt/gcc-arm-none-eabi/bin/arm-none-eabi-size',
+            path
+        ],
+        stdout=subprocess.PIPE
+    )
+
     result = result.stdout.decode('utf-8')
     head, data = result.strip().split('\n')
 
@@ -95,53 +123,57 @@ def size_parser(path):
 
     size = dict()
     for i, name in enumerate(head):
-        size[name] = Byte(data[i])
+        size[name] = parse_size(data[i])
 
     return size
 
 
-def calculate_percentages(use_memory, all_memory):
-    return use_memory.value / (all_memory.value / 100)
+class Memory:
+    def __init__(self, name, size, use) -> None:
+        self.name = name
+        self.size = size
+        self.use = use
+        self.free = (size - use).best_prefix()
+        self.percent = 100 * use / size
 
 
-def create_table(name, use_memory, all_memory, color=True):
-    columns = 30
-    width = columns - 2
-    percent = calculate_percentages(use_memory, all_memory)
-    bar = width if percent >= 100 else int(width*percent/100)
+class MemoryUsage:
+    def __init__(self, memory: list) -> None:
+        self.memory = memory
+        self.show()
 
-    head_str = '{} MEMORY {:.2g} %'.format(name, percent)
-    all_str = 'All:'
-    use_str = 'Use:'
-    free_str = 'Free:'
+    def show(self):
+        NUMBER_OF_BARS = 40
 
-    head_width_tag = '{:^' + str(width) + '}'
-    all_width_tag = all_str + '{:>' + str(width - len(all_str)) + '}'
-    use_width_tag = use_str + '{:>' + str(width - len(use_str)) + '}'
-    free_width_tag = free_str + '{:>' + str(width - len(free_str)) + '}'
+        grid = Table.grid(expand=False)
+        grid.add_column(justify='left', style='bold magenta')
+        grid.add_column()
+        grid.add_column(justify='left')
+        grid.add_column()
+        grid.add_column(justify='right', style='magenta')
+        grid.add_column()
+        grid.add_column(justify='right', style='cyan')
+        grid.add_column(justify='center', style='')
+        grid.add_column(justify='right', style='cyan')
 
-    if color:
-        if percent < 60:
-            color = Colors.bg.green + Colors.fg.darkgrey + Colors.bold
-        elif percent < 80:
-            color = Colors.bg.orange + Colors.fg.black + Colors.bold
-        else:
-            color = Colors.bg.red + Colors.fg.black + Colors.bold
-    else:
-        color = Colors.bold
+        for memory in self.memory:
 
-    head = head_width_tag.format(head_str)
-    head = ''.join((color, head[:bar], Colors.reset + Colors.bold, head[bar:], Colors.reset))
+            bars = int(NUMBER_OF_BARS * memory.percent / 100)
+            spaces = NUMBER_OF_BARS - bars
 
-    table = []
-    table.append('╔{}╗'.format('═'*width))
-    table.append('║{}║'.format(head))
-    table.append('╟{}╢'.format('─'*width))
-    table.append('║{}║'.format(all_width_tag.format(str(all_memory))))
-    table.append('║{}║'.format(use_width_tag.format(str(use_memory))))
-    table.append('║{}║'.format(free_width_tag.format(str(all_memory - use_memory))))
-    table.append('╚{}╝'.format('═'*width))
-    return table
+            grid.add_row(
+                f'  {memory.name}',
+                ' ',
+                f'[red]{bars * "━"}[/][#444444]{spaces * "━"}[/]',
+                ' ',
+                f'{memory.percent:.0f} %',
+                '  ',
+                f'{memory.use.format("{value:.1f} {unit}")}',
+                ' / ',
+                f'{memory.size.format("{value:.1f} {unit}")}'
+            )
+
+        print(grid)
 
 
 if __name__ == '__main__':
@@ -167,26 +199,13 @@ if __name__ == '__main__':
         default='.',
         help='destination elf file',
     )
-    parser.add_argument(
-        '-c',
-        '--color',
-        dest='color',
-        action='store_true',
-        default=False,
-        help='activated color output'
-    )
-    parser.add_argument(
-        '-v',
-        '--vertical',
-        dest='table_rate',
-        action='store_true',
-        default=False,
-        help='prints the tables underneath'
-    )
+
+    args = parser.parse_args()
 
     try:
-        path_linker = check_linker_script_path(parser.parse_args().path_linker)
-        path_elf = check_elf_path(parser.parse_args().path_elf)
+        path_linker = check_linker_script_path(args.path_linker)
+        path_elf = check_elf_path(args.path_elf)
+
     except NotExistError as e:
         print(str(e), file=sys.stderr)
         exit(-1)
@@ -197,13 +216,17 @@ if __name__ == '__main__':
     use_ram = size['data'] + size['bss']
     use_flash = size['text'] + size['data']
 
-    color = parser.parse_args().color
-    ram = create_table('RAM', use_ram, memory['RAM'], color)
-    flash = create_table('FLASH', use_flash, memory['FLASH'], color)
-
-    if parser.parse_args().table_rate:
-        for line in ram + flash:
-            print(line)
-    else:
-        for line_ram, line_flash in zip(ram, flash):
-            print('{} {}'.format(line_ram, line_flash))
+    MemoryUsage(
+        [
+            Memory(
+                name='RAM',
+                size=memory['RAM'],
+                use=use_ram
+            ),
+            Memory(
+                name='FLASH',
+                size=memory['FLASH'],
+                use=use_flash
+            )
+        ]
+    )
