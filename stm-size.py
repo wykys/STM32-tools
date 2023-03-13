@@ -8,20 +8,9 @@ import bitmath
 import argparse
 import subprocess
 from pathlib import Path
-from operator import methodcaller
 
 from rich import print
 from rich.table import Table
-
-
-def parse_size(num: str) -> bitmath.ALL_UNIT_TYPES:
-    num = num.strip()
-    last = num[-1]
-    if last != 'B':
-        if last.isalpha():
-            num += 'i'
-        num += 'B'
-    return bitmath.parse_string(num).best_prefix()
 
 
 class NotExistError(IOError):
@@ -70,62 +59,71 @@ def check_linker_script_path(path):
     return check_path(path, is_linker_script, max_recursive=1)
 
 
-def linker_script_parser(path):
-    with open(path, 'r') as fr:
-        script = fr.readlines()
-
-    memory_flag = False
-    memory = dict()
-
-    for line in script:
-        if 'MEMORY' in line:
-            memory_flag = True
-        elif memory_flag:
-            if '}' in line:
-                break
-            elif 'LENGTH' in line:
-                name = line.strip().split(':')[0].strip().split()[0].strip()
-                data = line.strip().split(':')[1].strip().split(',')[
-                    1].split('=')[1]
-                memory[name] = parse_size(data)
-    return memory
-
-
-class SizeParser:
+class GeneralMemmoryParser(object):
     def __init__(self) -> None:
-        pass
+        self.memory: dict = {}
+        self.parser()
 
-    def parse_size_table(self, data):
-        return list(
-            map(
-                methodcaller('strip'), data.split()
-            )
-        )[:-2]
+    def str_to_bitmath(self, num: str) -> bitmath.ALL_UNIT_TYPES:
+        num = num.strip()
+        last = num[-1]
+        if last != 'B':
+            if last.isalpha():
+                num += 'i'
+            num += 'B'
+        return bitmath.parse_string(num).best_prefix()
+
+    def parser(self) -> None:
+        print('[bold red]ERROR CODE:[/] Not implemented!')
 
 
-def size_parser(path):
-    result = subprocess.run(
-        [
-            '/opt/gcc-arm-none-eabi/bin/arm-none-eabi-size',
-            path
-        ],
-        stdout=subprocess.PIPE
-    )
+class LinkerScriptParser(GeneralMemmoryParser):
+    def __init__(self, path: str) -> None:
+        self.path = path
+        super().__init__()
 
-    result = result.stdout.decode('utf-8')
-    head, data = result.strip().split('\n')
+    def parser(self) -> None:
 
-    def parse_size_table(data):
-        return list(map(methodcaller('strip'), data.split()))[:-2]
+        with open(self.path, 'r') as fr:
+            script = fr.readlines()
 
-    head = parse_size_table(head)
-    data = parse_size_table(data)
+        memory_flag = False
 
-    size = dict()
-    for i, name in enumerate(head):
-        size[name] = parse_size(data[i])
+        for line in script:
+            if 'MEMORY' in line:
+                memory_flag = True
 
-    return size
+            elif memory_flag:
+                if '}' in line:
+                    break
+                elif 'LENGTH' in line:
+                    name = line.strip().split(
+                        ':')[0].strip().split()[0].strip()
+                    num = line.strip().split(':')[1].strip().split(',')[
+                        1].split('=')[1]
+                    self.memory[name] = self.str_to_bitmath(num)
+
+
+class SizeParser(GeneralMemmoryParser):
+    def __init__(self, path: str) -> None:
+        self.path = path
+        super().__init__()
+
+    def parser(self):
+        result = subprocess.run(
+            (
+                '/opt/gcc-arm-none-eabi/bin/arm-none-eabi-size',
+                '--format=sysv',
+                self.path,
+            ),
+            stdout=subprocess.PIPE
+        )
+
+        result = result.stdout.decode('utf-8').split('\n')[2:-4]
+
+        for line in result:
+            section, size, _ = line.split()
+            self.memory[section] = self.str_to_bitmath(size)
 
 
 class Memory:
@@ -210,11 +208,11 @@ if __name__ == '__main__':
         print(str(e), file=sys.stderr)
         exit(-1)
 
-    memory = linker_script_parser(path_linker)
-    size = size_parser(path_elf)
+    memory = LinkerScriptParser(path_linker).memory
+    size = SizeParser(path_elf).memory
 
-    use_ram = size['data'] + size['bss']
-    use_flash = size['text'] + size['data']
+    use_ram = size['.data'] + size['.bss']
+    use_flash = size['.text'] + size['.data']
 
     MemoryUsage(
         [
