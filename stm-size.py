@@ -12,6 +12,8 @@ from pathlib import Path
 from rich import print
 from rich.table import Table
 
+###############################################################################
+
 
 class NotExistError(IOError):
     def __init__(self, name: str):
@@ -57,6 +59,8 @@ def check_elf_path(path):
 
 def check_linker_script_path(path):
     return check_path(path, is_linker_script, max_recursive=1)
+
+###############################################################################
 
 
 class GeneralMemmoryParser(object):
@@ -208,22 +212,22 @@ if __name__ == '__main__':
         print(str(e), file=sys.stderr)
         exit(-1)
 
-    memory = LinkerScriptParser(path_linker).memory
-    size = SizeParser(path_elf).memory
+    size = LinkerScriptParser(path_linker).memory
+    use = SizeParser(path_elf).memory
 
-    use_ram = size['.data'] + size['.bss']
-    use_flash = size['.text'] + size['.data']
+    use_ram = use['.data'] + use['.bss']
+    use_flash = use['.text'] + use['.data']
 
     MemoryUsage(
         [
             Memory(
                 name='RAM',
-                size=memory['RAM'],
+                size=size['RAM'],
                 use=use_ram
             ),
             Memory(
                 name='FLASH',
-                size=memory['FLASH'],
+                size=size['FLASH'],
                 use=use_flash
             )
         ]
