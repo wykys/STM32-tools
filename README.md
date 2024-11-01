@@ -1,13 +1,17 @@
 # STM32-tools
+
 Tools for development of STM32 microcontrollers.
 
 ## stm-size
+
 The script parses the memory information from the linker script and the size program, and then displays them in a more readable form.
 
 The script can automatically find a binary `.elf` and linker script `.ld` file, if the two folders do not exceed the level of the two.
 
 ### Demo
+
 `stm-size`
+
 ```
 ╔════════════════════════════╗ ╔════════════════════════════╗
 ║      RAM MEMORY 42 %       ║ ║     FLASH MEMORY 51 %      ║
@@ -19,7 +23,9 @@ The script can automatically find a binary `.elf` and linker script `.ld` file, 
 ```
 
 ### Agruments
+
 `stm-size -h`
+
 ```
 usage: stm-size [-h] [-l PATH_LINKER] [-e PATH_ELF] [-c] [-v]
 
@@ -37,14 +43,27 @@ optional arguments:
 ```
 
 ## [Cortex Debug](https://github.com/Marus/cortex-debug)
+
 To run debugging, you need to install the following tools:
+
 * [ARM toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
 * [OpenOCD](https://github.com/ntfreak/openocd)
-* [CMSIS-SVD](https://github.com/posborne/cmsis-svd)
+* [CMSIS-SVD](https://github.com/cmsis-svd/cmsis-svd-data)
 
-For LinuxMint 20, it is necessary to install the library for debugging via openocd to work correctly.
-```sh
+For LinuxMint 20, it is necessary to install the library for debugging via `openocd` to work correctly.
+
+```bash
 sudo apt install libncurses5
+```
+
+For Ubuntu 24.04
+
+```bash
+sudo apt install libncurses6
+ldconfig -p | grep libncurses
+cd /lib/x86_64-linux-gnu
+sudo ln -s libncurses.so.6 libncurses.so.5
+sudo ln -s libncursesw.so.6 libtinfo.so.5
 ```
 
 ### Visual Studio Code configuratin:
@@ -59,10 +78,10 @@ sudo apt install libncurses5
             "request": "launch",
             "servertype": "openocd",
             "cwd": "${workspaceRoot}/build",
-            "executable": "charger-display-fw.elf",
+            "executable": "fw.elf",
             "name": "Debug (OpenOCD)",
             "device": "STM32F410",
-            "svdFile": "/home/wykys/projects/cmsis-svd/data/STMicro/STM32F410.svd",
+            "svdFile": "/opt/cmsis-svd/data/STMicro/STM32F410.svd",
             "showDevDebugOutput": false,
             "configFiles": [
                 "interface/stlink.cfg",
@@ -87,6 +106,7 @@ sudo apt install libncurses5
 ```
 
 `settings.json`
+
 ```json
 {
     "cortex-debug.armToolchainPath": "/opt/gcc-arm-none-eabi/bin",
@@ -95,6 +115,7 @@ sudo apt install libncurses5
 ```
 
 ## STM32CubeProgrammer Linux support
+
 ``` bash
 # add new repo
 wget -q -O - "https://download.bell-sw.com/pki/GPG-KEY-bellsoft" | sudo apt-key add -
